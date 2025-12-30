@@ -1,0 +1,28 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python (Compiled files)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local Database (important to avoid overwriting database files)
+db.sqlite3
+
+# Sensitive configuration files (Environment variables)
+.env
+
+# Jupyter Notebooks (auto-save checkpoints)
+.ipynb_checkpoints/
+
+# Media files (User-uploaded files)
+media/
+
+# Collected static files (Used after running collectstatic)
+staticfiles/
+
+# System files
+.DS_Store
+Thumbs.db
