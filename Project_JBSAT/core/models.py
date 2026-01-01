@@ -68,11 +68,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         
 # --- POINT 2 & 3 : TES AUTRES TABLES ---
 class Job(models.Model):
+
+    EMPLOYMENT_TYPES = [
+        ('FULL_TIME', 'Full-time'),
+        ('PART_TIME', 'Part-time'),
+        ('CONTRACT', 'Contract'),
+        ('FREELANCE', 'Freelance'),
+    ]
+
     employer = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     title = models.CharField(max_length=255)
-    description = models.TextField() # Changé en TextField pour plus de place
+    description = models.TextField() # Changed into TextField for more space
     location = models.TextField()
-    employment_type = models.CharField(max_length=100)
+
+    employment_type = models.CharField(
+        max_length=20, 
+        choices=EMPLOYMENT_TYPES, 
+        default='FULL_TIME'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -80,12 +93,28 @@ class Job(models.Model):
         db_table = 'job'
 
 class Application(models.Model):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=True, null=True)
-    seeker = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
-    resume_url = models.TextField()
-    status = models.CharField(max_length=50, default='pending')
+
+    STATUS_CHOICES = [
+        ('NEW', 'New'),
+        ('REVIEWING', 'Reviewing'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    job = models.ForeignKey(Job, on_delete=models.CASCADE)
+    seeker = models.ForeignKey(User, on_delete=models.CASCADE)
+    # We use URLField because it's a link to Cloudinary/S3
+    resume_url = models.URLField()
+# 2. Update status to use choices and the 'NEW' default
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='NEW'
+    )
     applied_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = True
         db_table = 'application'
+        # 3. Prevent a seeker from applying more than once to the same job
+        unique_together = ('job', 'seeker')

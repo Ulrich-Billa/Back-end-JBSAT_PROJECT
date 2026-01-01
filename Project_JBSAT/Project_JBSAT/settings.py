@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "cloudinary_storage",
     "django.contrib.staticfiles",
+    "cloudinary",
     "rest_framework",
     "core",
 ]
@@ -153,3 +155,13 @@ from datetime import timedelta
 SIMPLE_JWT={   'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), 
             'REFRESH_TOKEN_LIFETIME' :timedelta(days=1),
                 'AUTH_HEADER_TYPES':('Bearer',),    } #format: bearer <token>
+
+
+# Cloudinary Configuration (Requirement FR-17)
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'doqetnv1l',
+    'API_KEY': '273558895342959',
+    'API_SECRET': '43V_YG54jnAX9ynqaZht1GtOBFI'
+}
+# Set Cloudinary as the default storage for media files
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

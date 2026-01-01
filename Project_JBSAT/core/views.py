@@ -6,15 +6,44 @@ from .models import Job ,User,Application
 from .serializers import JobSerializer,JobSummarySerializer,ApplicationSerializer
 from .permissions import IsEmployerOrReadOnly
 
-@api_view(['GET']) 
-def job_detail(request,pk):
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsEmployerOrReadOnly])
+def job_detail(request, pk):
+    """
+    Retrieve, update or delete a job instance (Requirements FR-05, FR-06, FR-07).
+    Permissions: Anyone can view (GET), only the owner can modify (PUT) or delete (DELETE).
+    """
     try:
-        job=Job.objects.get(pk=pk)
+        job = Job.objects.get(pk=pk)
     except Job.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-    serializer=JobSerializer(job)
-    return Response(serializer.data)
+    # READ: Get job details
+    if request.method == 'GET':
+        serializer = JobSerializer(job)
+        return Response(serializer.data)
+
+    # UPDATE: Modify job details (Employer only)
+    elif request.method == 'PUT':
+        # Security: Ensure the employer owns the job being updated
+        if job.employer != request.user:
+            return Response({"error": "You can only update your own job postings"}, status=status.HTTP_403_FORBIDDEN)
+            
+        serializer = JobSerializer(job, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # DELETE: Remove job (Employer only)
+    elif request.method == 'DELETE':
+        # Security: Ensure the employer owns the job being deleted
+        if job.employer != request.user:
+            return Response({"error": "You can only delete your own job postings"}, status=status.HTTP_403_FORBIDDEN)
+        
+        job.delete()
+        return Response({"message": "Job deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
 
 @api_view(['GET','POST'])#allows post
 @permission_classes([IsEmployerOrReadOnly])
@@ -57,8 +86,8 @@ def job_list(request):
 @permission_classes([IsAuthenticated]) # Only logged-in users can apply
 def apply_to_job(request, job_id):
     """
-    Handle job application submission (Requirement FR-15).
-    """
+    Handle job application with Cloudinary storage (Requirement US-02/FR-17).
+    Saves the file to the cloud and stores the secure URL in PostgreSQL.    """
     # 1. Check if the job exists
     try:
         job = Job.objects.get(id=job_id)
@@ -66,10 +95,12 @@ def apply_to_job(request, job_id):
         return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
 
     # 2. Prevent employers from applying to jobs (Business Logic)
-    if request.user.role == 'Employer':
+    if request.user.role == 'employer':
         return Response({"error": "Employers cannot apply for jobs"}, status=status.HTTP_403_FORBIDDEN)
 
     # 3. Create the application
+    # 3. Prepare data for the serializer
+    # The resume_url should be the secure link provided by Cloudinary from the frontend
     data = {
         'job': job.id,
         'resume_url': request.data.get('resume_url') # Link to the resume
@@ -96,13 +127,18 @@ def employer_applications(request):
     List all applications received for jobs posted by the current employer (Requirement FR-08).
     """
 
-    if request.user.role != 'Employer':
+    if request.user.role != 'employer':
         return Response({"error": "Only employers can access this dashboard"}, status=status.HTTP_403_FORBIDDEN)
 
     # 2. selected the applications for the jobs posted by this emplyer.
     # We use the notation __ to navigate from Application -> Job -> Employer
     applications = Application.objects.filter(job__employer=request.user)
 
+    # Optional: Filter by specific job_id from query parameters (?job_id=1)
+    job_id = request.query_params.get('job_id')
+    if job_id:
+        applications = applications.filter(job_id=job_id)
+        
     # 3. data serialization
     serializer = ApplicationSerializer(applications, many=True)
     return Response(serializer.data)

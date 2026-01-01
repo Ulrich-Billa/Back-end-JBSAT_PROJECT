@@ -15,6 +15,11 @@ class JobSummarySerializer(serializers.ModelSerializer):
 
 class ApplicationSerializer(serializers.ModelSerializer):
     # We include some read-only fields for the response
+    # These fields are not in the Application model, so we fetch them from relations
+    # source='job.title' navigates to the related Job model to get its title
+    job_title = serializers.ReadOnlyField(source='job.title')
+    # source='seeker.full_name' gets the full name of the user who applied
+    seeker_name = serializers.ReadOnlyField(source='seeker.full_name')
     class Meta:
         model=Application
         fields=["id",'job','seeker','job_title','seeker_name','resume_url','status','applied_at']
