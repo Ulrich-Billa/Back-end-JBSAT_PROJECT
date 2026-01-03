@@ -185,19 +185,3 @@ def update_application_status(request, pk):
     return Response(serializer.data)
 
 
-
-
-
-
-
-# from django.shortcuts import render
-# from .models import Job # import our model Job
-
-# # Create your views here.
-
-# def job_list(request):
-#     # to take all the job in our database
-#     jobs=Job.objects.all()
-
-#     # we send them to the HTLM file (templates)
-#     return render(request, 'core/job_list.html',{'jobs':jobs})

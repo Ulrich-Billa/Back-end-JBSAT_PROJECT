@@ -1,44 +1,55 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-# We import the models created for the project
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import User, Job, Application 
 
-# We create a custom Admin class to handle the User model security and password hashing
+# --- FORMS ---
+
+class MyUserCreationForm(UserCreationForm):
+    """
+    Overriding the creation form to use 'email' and include your custom fields.
+    """
+    class Meta:
+        model = User
+        fields = ("email", "full_name", "role")
+
+class MyUserChangeForm(UserChangeForm):
+    class Meta:
+        model = User
+        fields = ("email", "full_name", "role", "is_active", "is_staff")
+
+# --- ADMIN ---
+
 class MyUserAdmin(UserAdmin):
-    # We define which columns to show in the users list
-    list_display = ('email', 'full_name', 'role', 'is_staff')
+    add_form = MyUserCreationForm
+    form = MyUserChangeForm
     
-    # We organize the fields in the edit page. 
-    # This structure is what triggers the secure password "change form" link.
+    list_display = ('email', 'full_name', 'role', 'is_staff')
+    list_filter = ('role', 'is_staff', 'is_active')
+
+    # Fields for the Edit User page
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal Info', {'fields': ('full_name', 'role')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
     )
-    
-    # We define the default ordering by email
+
+    # Fields for the Add User page
+    # Note: 'password1' and 'password2' are the standard names in UserCreationForm
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'full_name', 'role', 'password1', 'password2'), 
+        }),
+    )
+
+    search_fields = ('email', 'full_name')
     ordering = ('email',)
 
-# We register the models to appear in the admin interface.
-# Note: We link 'User' with 'MyUserAdmin' to enable security features.
+# --- REGISTRATION ---
+
 admin.site.register(User, MyUserAdmin)
 admin.site.register(Job)
 admin.site.register(Application)
 
 
-
-
-
-
-
-
-
-# from django.contrib import admin
-# #from django.contrib.auth.admin import UserAdmin
-# # We import the models created by inspectdb for me
-# from .models import User, Job, Application 
-
-# # We register them to appear in the admin interface.
-# admin.site.register(User)
-# admin.site.register(Job)
-# admin.site.register(Application)
