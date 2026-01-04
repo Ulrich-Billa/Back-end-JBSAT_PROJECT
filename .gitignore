@@ -5,7 +5,7 @@ ENV/
 
 # Python (Compiled files)
 __pycache__/
-*.py[cod]
+*.py[cod]   
 *$py.class
 
 # Local Database (important to avoid overwriting database files)
@@ -26,3 +26,7 @@ staticfiles/
 # System files
 .DS_Store
 Thumbs.db
+
+#another file
+
+schema_db.sql
