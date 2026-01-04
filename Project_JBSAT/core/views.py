@@ -1,9 +1,11 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly,AllowAny
 from rest_framework import status
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Job ,User,Application
-from .serializers import JobSerializer,JobSummarySerializer,ApplicationSerializer
+from .serializers import JobSerializer,JobSummarySerializer,ApplicationSerializer,MyTokenObtainPairSerializer,UserRegistrationSerializer
 from .permissions import IsEmployerOrReadOnly
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -185,3 +187,41 @@ def update_application_status(request, pk):
     return Response(serializer.data)
 
 
+class MyTokenObtainPairView(TokenObtainPairView):   
+    #Override the default Login view to return additional user info.
+    serializer_class=MyTokenObtainPairSerializer
+
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny]) # This view is public (no login required to register)
+def register_user(request):
+    """
+    Handle user registration and return JWT tokens for auto-login.
+    """
+    serializer = UserRegistrationSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        user = serializer.save()
+        
+        # Generate tokens for the "Auto-login" feature in React
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'message': 'User registered successfully'
+        }, status=status.HTTP_201_CREATED)
+        
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def seeker_applications(request): 
+    try:
+        applications = Application.objects.filter(seeker=request.user)
+        serializer = ApplicationSerializer(applications, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

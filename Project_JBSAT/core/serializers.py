@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from core.models import Job 
-from .models import Application
+from .models import Application,User
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 
 class JobSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,12 +27,39 @@ class ApplicationSerializer(serializers.ModelSerializer):
         fields=["id",'job','seeker','job_title','seeker_name','resume_url','status','applied_at']
         read_only_fields=['status','applied_at','seeker']
 
-# # core/serializers.py
-# from rest_framework import serializers
-# from .models import Job
 
-# class JobSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Job
-#         # Serialize all fields from the Job model
-#         fields = '__all__'
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    # We define password as write_only so it's never sent back in JSON
+    password = serializers.CharField(write_only=True,min_length=5)
+
+    class Meta:
+        model = User
+        fields = ['full_name', 'email', 'password', 'role']
+
+    def create(self, validated_data):
+        # We use the create_user method to ensure the password is hashed correctly
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            full_name=validated_data['full_name'],
+            password=validated_data['password'],
+            role=validated_data.get('role', 'seeker')
+        )
+        return user
+
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Customizes the JWT response to include user details (name and role) 
+    as expected by the React frontend.
+    """
+    def validate(self, attrs):
+        # Call the original validation to get the tokens
+        data = super().validate(attrs)
+
+        # Add custom data from our User model (SRS Requirement)
+        data['userName'] = self.user.full_name
+        data['userRole'] = self.user.role
+        
+        return data

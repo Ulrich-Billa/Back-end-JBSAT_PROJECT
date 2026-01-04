@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import MyTokenObtainPairView
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 
@@ -10,9 +11,16 @@ urlpatterns=[
 
              path('api/jobs/<int:job_id>/apply/', views.apply_to_job, name='apply_to_job'),
 
+            #seeker application dashboard
+            path('api/seeker/applications/',views.seeker_applications, name='seeker_applications'),
+
+
+            #Registration page
+            path('api/register/', views.register_user, name='register'),
+
             # JWT Authentication endpoints
             # Login endpoint: gives access and refresh tokens
-             path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+             path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
              # Refresh endpoint: gives a new access token when expired
             path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
